@@ -15,7 +15,7 @@ import (
 
 var firestoreClient *firestore.Client
 var m sync.Mutex
-var latestPost model.PostData
+var LatestPost model.PostData
 
 func InitFirestoreClient(ctx context.Context) {
 	// sa := option.WithCredentialsFile("firebase-adminsdk.json")
@@ -36,7 +36,7 @@ func InitFirestoreClient(ctx context.Context) {
 		log.Fatalln(err)
 	}
 
-	err = GetLatestPost()
+	err = GetLatestPost(ctx)
 	if err != nil {
 		fmt.Println("문서 데이터를 가져오는 데 실패했습니다.", err)
 	}
@@ -46,7 +46,7 @@ func CloseFirestoreClient() {
 	firestoreClient.Close()
 }
 
-func GetLatestPost() error {
+func GetLatestPost(ctx context.Context) error {
 	m.Lock()
 	postQuery := firestoreClient.Collection("coupon_post").OrderBy("num", firestore.Desc).Limit(1)
 	docs, err := postQuery.Documents(context.Background()).GetAll()
@@ -56,11 +56,11 @@ func GetLatestPost() error {
 
 	for _, doc := range docs {
 
-		if err := doc.DataTo(&latestPost); err != nil {
+		if err := doc.DataTo(&LatestPost); err != nil {
 
 			return err
 		}
-		fmt.Printf("DB 내 가장 최근 포스트: %s (번호: %d)\n", latestPost.Title, latestPost.Num)
+		fmt.Printf("DB 내 가장 최근 포스트: %s (번호: %d)\n", LatestPost.Title, LatestPost.Num)
 	}
 
 	defer m.Unlock()
@@ -74,14 +74,14 @@ func SavePosts(ctx context.Context, postList []model.PostData) {
 		writer := firestoreClient.BulkWriter(ctx)
 		collectionRef := firestoreClient.Collection("coupon_post")
 		for _, post := range postList {
-			if latestPost.Num >= post.Num {
+			if LatestPost.Num >= post.Num {
 				break
 			}
 			postRef := collectionRef.Doc(createPostID(post.Num))
 			writer.Set(postRef, post)
 		}
 
-		latestPost = postList[0]
+		LatestPost = postList[0]
 
 		writer.Flush()
 		m.Unlock()

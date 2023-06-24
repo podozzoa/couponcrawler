@@ -37,5 +37,6 @@ func filteringStrings(str string) string {
 	str = strings.Replace(str, " ", "", -1)
 	str = strings.Replace(str, "[쿠폰]", "", -1)
 	str = strings.Replace(str, "!", "", -1)
+	str = strings.Replace(str, "\n", "", -1)
 	return str
 }

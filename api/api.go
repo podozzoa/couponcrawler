@@ -5,11 +5,10 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin"
-	"github.com/podozzoa/couponcrawler/model"
+	"github.com/podozzoa/couponcrawler/store"
 )
 
 var m sync.Mutex
-var latestPost model.PostData
 
 func InitAPI() {
 	m.Lock()
@@ -17,9 +16,7 @@ func InitAPI() {
 
 	router := gin.Default()
 	router.GET("/latest", func(c *gin.Context) {
-		m.Lock()
-		defer m.Unlock()
-		c.JSON(http.StatusOK, gin.H{"title": latestPost.Title, "author": latestPost.Author, "link": latestPost.Link})
+		c.JSON(http.StatusOK, gin.H{"title": store.LatestPost.Title, "author": store.LatestPost.Author, "link": store.LatestPost.Link})
 	})
 
 	router.Run(":8080")
