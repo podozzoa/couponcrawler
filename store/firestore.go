@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -12,8 +11,6 @@ import (
 	firebase "firebase.google.com/go"
 	"github.com/podozzoa/couponcrawler/model"
 	"google.golang.org/api/option"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 var firestoreClient *firestore.Client
@@ -38,71 +35,80 @@ func InitFirestoreClient(ctx context.Context) {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	err = GetLatestPost()
+	if err != nil {
+		fmt.Println("문서 데이터를 가져오는 데 실패했습니다.", err)
+	}
 }
 
 func CloseFirestoreClient() {
 	firestoreClient.Close()
 }
 
+func GetLatestPost() error {
+	m.Lock()
+	postQuery := firestoreClient.Collection("coupon_post").OrderBy("num", firestore.Desc).Limit(1)
+	docs, err := postQuery.Documents(context.Background()).GetAll()
+	if err != nil {
+		fmt.Println("쿼리 실행에 실패했습니다.", err)
+	}
+
+	for _, doc := range docs {
+
+		if err := doc.DataTo(&latestPost); err != nil {
+
+			return err
+		}
+		fmt.Printf("DB 내 가장 최근 포스트: %s (번호: %d)\n", latestPost.Title, latestPost.Num)
+	}
+
+	defer m.Unlock()
+	return nil
+}
+
 func SavePosts(ctx context.Context, postList []model.PostData) {
 	if len(postList) >= 1 {
 		m.Lock()
 
-		newPost := postList[0]
-
-		if latestPost.Num != newPost.Num {
-			latestPost = newPost
-			numDiff := newPost.Num - latestPost.Num
-
-			for i := 0; i < numDiff; i++ {
-				post := postList[i]
-				postMap, err := postDataToMap([]model.PostData{post})
-				if err != nil {
-					log.Printf("Failed to convert PostData to map: %v", err)
-					m.Unlock()
-					return
-				}
-				postId := createPostID(post.Num)
-				postRef := firestoreClient.Collection("coupon_post").Doc(postId)
-				// 포스트가 이미 존재하는지 확인합니다.
-				_, err = postRef.Get(context.Background())
-				if status.Code(err) == codes.NotFound {
-					_, err = postRef.Set(context.Background(), postMap[0])
-					if err != nil {
-						log.Fatalf("Failed to save data for post %d: %v", post.Num, err)
-					}
-				} else if err != nil {
-					log.Printf("Failed to get post %d: %v", post.Num, err)
-				} // 존재하면 이미 저장되어 있으므로 아무 것도 하지 않습니다.
+		writer := firestoreClient.BulkWriter(ctx)
+		collectionRef := firestoreClient.Collection("coupon_post")
+		for _, post := range postList {
+			if latestPost.Num >= post.Num {
+				break
 			}
+			postRef := collectionRef.Doc(createPostID(post.Num))
+			writer.Set(postRef, post)
 		}
 
+		latestPost = postList[0]
+
+		writer.Flush()
 		m.Unlock()
 	}
 }
 
-func postDataToMap(postList []model.PostData) ([]map[string]interface{}, error) {
-	postListMap := make([]map[string]interface{}, len(postList))
-	for i, post := range postList {
-		jsonPost, err := json.Marshal(post)
-		if err != nil {
-			log.Printf("Failed to marshal post data: %v", err)
-			return nil, err
-		}
-
-		var postMap map[string]interface{}
-		err = json.Unmarshal(jsonPost, &postMap)
-		if err != nil {
-			log.Printf("Failed to unmarshal post data: %v", err)
-			return nil, err
-		}
-
-		postListMap[i] = postMap
-	}
-
-	return postListMap, nil
-}
+//
 
 func createPostID(postNum int) string {
 	return fmt.Sprintf("Post%d", postNum)
 }
+
+//func postDataToMap(postList []model.PostData) ([]map[string]interface{}, error) {
+// 	postListMap := make([]map[string]interface{}, len(postList))
+// 	for i, post := range postList {
+// 		jsonPost, err := json.Marshal(post)
+// 		if err != nil {
+// 			log.Printf("Failed to marshal post data: %v", err)
+// 			return nil, err
+// 		}
+// 		var postMap map[string]interface{}
+// 		err = json.Unmarshal(jsonPost, &postMap)
+// 		if err != nil {
+// 			log.Printf("Failed to unmarshal post data: %v", err)
+// 			return nil, err
+// 		}
+// 		postListMap[i] = postMap
+// 	}
+// 	return postListMap, nil
+// }

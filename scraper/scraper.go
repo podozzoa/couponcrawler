@@ -3,6 +3,7 @@ package scraper
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	"github.com/gocolly/colly/v2"
 	"github.com/podozzoa/couponcrawler/model"
@@ -18,7 +19,7 @@ func CheckNewPosts(ctx context.Context) {
 
 	c.OnHTML("form[name=board_list1] tbody tr:not(.notice)", func(e *colly.HTMLElement) {
 		num, _ := strconv.Atoi(e.ChildText("td.num span"))
-		title := e.ChildText("td.tit a.subject-link")
+		title := filteringStrings(e.ChildText("td.tit a.subject-link"))
 		author := e.ChildText("td.user span")
 		link := e.Request.AbsoluteURL(e.ChildAttr("td.tit a.subject-link", "href"))
 
@@ -29,4 +30,12 @@ func CheckNewPosts(ctx context.Context) {
 	c.Visit(url)
 
 	store.SavePosts(ctx, postList)
+}
+
+func filteringStrings(str string) string {
+	str = strings.Replace(str, ",", "", -1)
+	str = strings.Replace(str, " ", "", -1)
+	str = strings.Replace(str, "[쿠폰]", "", -1)
+	str = strings.Replace(str, "!", "", -1)
+	return str
 }
