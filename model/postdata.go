@@ -7,11 +7,12 @@ import (
 )
 
 type PostData struct {
-	From   string `json:"from"`
-	Num    int    `json:"num"`
-	Title  string `json:"title"`
-	Author string `json:"author"`
-	Link   string `json:"link"`
+	From         string `json:"from"`
+	Num          int    `json:"num"`
+	Title        string `json:"title"`
+	Author       string `json:"author"`
+	Link         string `json:"link"`
+	Crawlingdate string `json:"Crawlingdate"`
 }
 
 func (p *PostData) ToMap() (map[string]interface{}, error) {

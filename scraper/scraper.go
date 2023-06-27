@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gocolly/colly/v2"
 	"github.com/podozzoa/couponcrawler/model"
@@ -23,7 +24,7 @@ func CheckNewPosts(ctx context.Context) {
 		author := e.ChildText("td.user span")
 		link := e.Request.AbsoluteURL(e.ChildAttr("td.tit a.subject-link", "href"))
 
-		post := model.PostData{From: from, Num: num, Title: title, Author: author, Link: link}
+		post := model.PostData{From: from, Num: num, Title: title, Author: author, Link: link, Crawlingdate: time.Now().Format("2006-01-02T15:04:05")}
 		postList = append(postList, post)
 	})
 

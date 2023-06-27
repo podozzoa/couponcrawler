@@ -26,7 +26,7 @@ func main() {
 	go func() {
 		for {
 			scraper.CheckNewPosts(ctx)
-			fmt.Println("Crawling...", time.Now().Format("2006-01-02T15:04:05Z"))
+			fmt.Println("Crawling...", time.Now().Format("2006-01-02T15:04:05"))
 			time.Sleep(time.Duration(config.CrawlingIntervalSeconds) * time.Second) // 크롤러를 30초마다 실행합니다.
 		}
 	}()

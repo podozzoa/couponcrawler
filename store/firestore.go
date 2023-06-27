@@ -93,22 +93,3 @@ func SavePosts(ctx context.Context, postList []model.PostData) {
 func createPostID(postNum int) string {
 	return fmt.Sprintf("Post%d", postNum)
 }
-
-//func postDataToMap(postList []model.PostData) ([]map[string]interface{}, error) {
-// 	postListMap := make([]map[string]interface{}, len(postList))
-// 	for i, post := range postList {
-// 		jsonPost, err := json.Marshal(post)
-// 		if err != nil {
-// 			log.Printf("Failed to marshal post data: %v", err)
-// 			return nil, err
-// 		}
-// 		var postMap map[string]interface{}
-// 		err = json.Unmarshal(jsonPost, &postMap)
-// 		if err != nil {
-// 			log.Printf("Failed to unmarshal post data: %v", err)
-// 			return nil, err
-// 		}
-// 		postListMap[i] = postMap
-// 	}
-// 	return postListMap, nil
-// }
